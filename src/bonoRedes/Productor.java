@@ -10,70 +10,75 @@ public class Productor {
   public static void main(String args[]) {
 
     try {
-      DatagramSocket socketUDP = new DatagramSocket();
-      byte[] mensaje = "hello".getBytes();
-      InetAddress hostServidor = descubrirBroadcastAddress();
-      int puertoServidor = 6789;
 
-      // Construimos un datagrama para enviar el mensaje al servidor
-      DatagramPacket peticion = new DatagramPacket(mensaje, "hello".length(), hostServidor,
-          puertoServidor);
+      while (true) {
+        DatagramSocket socketUDP = new DatagramSocket();
+        byte[] mensaje = "hello".getBytes();
+        InetAddress hostServidor = descubrirBroadcastAddress();
+        int puertoServidor = 6789;
+        // Construimos un datagrama para enviar el mensaje al servidor
+        DatagramPacket peticion = new DatagramPacket(mensaje, "hello".length(), hostServidor,
+            puertoServidor);
 
-      // Enviamos el datagrama
-      socketUDP.send(peticion);
+        // Enviamos el datagrama
+        socketUDP.send(peticion);
 
-      // Construimos el DatagramPacket que contendrá la respuesta
-      byte[] bufer = new byte[1000];
-      DatagramPacket respuesta = new DatagramPacket(bufer, bufer.length);
-      socketUDP.receive(respuesta);
+        // Construimos el DatagramPacket que contendrá la respuesta
+        byte[] bufer = new byte[1000];
+        DatagramPacket respuesta = new DatagramPacket(bufer, bufer.length);
+        socketUDP.receive(respuesta);
+        // Enviamos la respuesta del servidor a la salida estandar
+        System.out.println("Respuesta: " + new String(respuesta.getData()));
 
-      // Enviamos la respuesta del servidor a la salida estandar
-      System.out.println("Respuesta: " + new String(respuesta.getData()));
+        // Cerramos el socket
+        socketUDP.close();
 
-      // Cerramos el socket
-      socketUDP.close();
+        // Espera
+        Thread.sleep(500);
+      }
 
     } catch (SocketException e) {
       System.out.println("Socket: " + e.getMessage());
     } catch (IOException e) {
       System.out.println("IO: " + e.getMessage());
+    } catch (InterruptedException e) {
+      System.out.println("Espera: " + e.getMessage());
     }
   }
 
-
-  private static InetAddress descubrirBroadcastAddress(){
+  private static InetAddress descubrirBroadcastAddress() {
     InetAddress hostServidor = null;
     try {
-            // Obtener la IP local
-            InetAddress localHost = InetAddress.getLocalHost();
+      // Obtener la IP local
+      InetAddress localHost = InetAddress.getLocalHost();
 
-            // Buscar la interfaz de red correspondiente a la IP local
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(localHost);
-            if (networkInterface == null) {
-                System.out.println("No se encontró la interfaz de red para la IP local.");
-                return null;
-            }
+      // Buscar la interfaz de red correspondiente a la IP local
+      NetworkInterface networkInterface = NetworkInterface.getByInetAddress(localHost);
+      if (networkInterface == null) {
+        System.out.println("No se encontró la interfaz de red para la IP local.");
+        return null;
+      }
 
-            // Obtener la lista de direcciones y prefijos de subred de la interfaz
-            List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
-            for (InterfaceAddress interfaceAddress : interfaceAddresses) {
-                if (interfaceAddress.getAddress().equals(localHost)) {
-                    // prefijo
-                    int prefixLength = interfaceAddress.getNetworkPrefixLength();
+      // Obtener la lista de direcciones y prefijos de subred de la interfaz
+      List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
+      for (InterfaceAddress interfaceAddress : interfaceAddresses) {
+        if (interfaceAddress.getAddress().equals(localHost)) {
+          // prefijo
+          int prefixLength = interfaceAddress.getNetworkPrefixLength();
 
-                    // máscara de subred
-                    String subnetMask = calculateSubnetMask(prefixLength);
+          // máscara de subred
+          String subnetMask = calculateSubnetMask(prefixLength);
 
-                    // broadcast
-                    String broadcastAddress = calculateBroadcastAddress(localHost, subnetMask);
-                    hostServidor =  InetAddress.getByName(broadcastAddress);
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+          // broadcast
+          String broadcastAddress = calculateBroadcastAddress(localHost, subnetMask);
+          hostServidor = InetAddress.getByName(broadcastAddress);
+          break;
         }
-            return hostServidor;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return hostServidor;
   }
 
   private static String calculateSubnetMask(int prefixLength) {
