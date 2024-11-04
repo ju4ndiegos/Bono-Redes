@@ -8,35 +8,39 @@ public class Productor {
 
   // Los argumentos proporcionan el mensaje y el nombre del servidor
   public static void main(String args[]) {
-
     try {
+      DatagramSocket socketUDP = new DatagramSocket();
+      socketUDP.setSoTimeout(1000); // Configurar el timeout a 1 segundo
+      byte[] mensaje = "hello".getBytes();
+      InetAddress hostServidor = descubrirBroadcastAddress(); // Asumimos que esta función devuelve la IP correcta
+      int puertoServidor = 6789;
 
       while (true) {
-        DatagramSocket socketUDP = new DatagramSocket();
-        byte[] mensaje = "hello".getBytes();
-        InetAddress hostServidor = descubrirBroadcastAddress();
-        int puertoServidor = 6789;
-        // Construimos un datagrama para enviar el mensaje al servidor
-        DatagramPacket peticion = new DatagramPacket(mensaje, "hello".length(), hostServidor,
-            puertoServidor);
+        try {
+          // Construimos un datagrama para enviar el mensaje al servidor
+          DatagramPacket peticion = new DatagramPacket(mensaje, mensaje.length, hostServidor, puertoServidor);
 
-        // Enviamos el datagrama
-        socketUDP.send(peticion);
+          // Enviamos el datagrama
+          socketUDP.send(peticion);
 
-        // Construimos el DatagramPacket que contendrá la respuesta
-        byte[] bufer = new byte[1000];
-        DatagramPacket respuesta = new DatagramPacket(bufer, bufer.length);
-        socketUDP.receive(respuesta);
-        // Enviamos la respuesta del servidor a la salida estandar
-        System.out.println("Respuesta: " + new String(respuesta.getData()));
+          // Construimos el DatagramPacket que contendrá la respuesta
+          byte[] bufer = new byte[1000];
+          DatagramPacket respuesta = new DatagramPacket(bufer, bufer.length);
 
-        // Cerramos el socket
-        socketUDP.close();
+          // Intentamos recibir la respuesta
+          socketUDP.receive(respuesta);
 
-        // Espera
+          // Enviamos la respuesta del servidor a la salida estándar
+          System.out.println("Respuesta: " + new String(respuesta.getData(), 0, respuesta.getLength()));
+
+        } catch (SocketTimeoutException e) {
+          // Si se agota el tiempo de espera, volvemos a enviar el mensaje
+          System.out.println("Tiempo de espera agotado. Volviendo a enviar el mensaje...");
+        }
+
+        // Espera entre intentos
         Thread.sleep(500);
       }
-
     } catch (SocketException e) {
       System.out.println("Socket: " + e.getMessage());
     } catch (IOException e) {
