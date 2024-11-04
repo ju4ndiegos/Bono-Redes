@@ -10,7 +10,7 @@ public class Productor {
   public static void main(String args[]) {
     try {
       DatagramSocket socketUDP = new DatagramSocket();
-      socketUDP.setSoTimeout(1000); // Configurar el timeout a 1 segundo
+      socketUDP.setSoTimeout(100); // Configurar el timeout a 1 segundo
       byte[] mensaje = "hello".getBytes();
       InetAddress hostServidor = descubrirBroadcastAddress(); // Asumimos que esta función devuelve la IP correcta
       int puertoServidor = 6789;
@@ -39,7 +39,7 @@ public class Productor {
         }
 
         // Espera entre intentos
-        Thread.sleep(500);
+        Thread.sleep(60000);
       }
     } catch (SocketException e) {
       System.out.println("Socket: " + e.getMessage());
